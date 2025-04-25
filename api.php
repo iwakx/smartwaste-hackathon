@@ -18,7 +18,7 @@ if ($conn->connect_error) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'read') {
     header('Content-Type: application/json');
-    $result = $conn->query("SELECT * FROM smartwaste ORDER BY created_at DESC LIMIT 50");
+    $result = $conn->query("SELECT * FROM waste_data ORDER BY created_at DESC LIMIT 50");
     $data = [];
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Simpan ke database
-    $stmt = $conn->prepare("INSERT INTO smartwaste (weight, distance, latitude, longitude, is_full) VALUES (?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO waste_data (weight, distance, latitude, longitude, is_full) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("ddddi", $weight, $distance, $latitude, $longitude, $is_full ? 1 : 0);
     $stmt->execute();
 
