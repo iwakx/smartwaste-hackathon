@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Sampah Pintar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #eef2f7;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .navbar {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .navbar-brand {
+      font-size: 1.5rem;
+    }
+    .navbar-brand span {
+      font-weight: bold;
+      color: #fff;
+    }
+    .card {
+      border: none;
+      border-radius: 1rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      transition: 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+    .map-embed {
+      width: 100%;
+      height: 180px;
+      border: 0;
+      border-radius: 0.5rem;
+    }
+    .badge-status {
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <i class="bi bi-recycle me-2"></i> Dashboard  <span>Sampah Pintar</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <h4 class="mb-4">Status Tempat Sampah</h4>
+    <div class="row" id="card-container">
+      <!-- Kartu akan dimasukkan lewat JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const tempatSampahData = [
+      {
+        id: 1,
+        nama: "Tempat Sampah A",
+        lat: -6.20123,
+        lng: 106.83245,
+        level: 85
+      },
+      {
+        id: 2,
+        nama: "Tempat Sampah B",
+        lat: -6.20250,
+        lng: 106.83512,
+        level: 40
+      },
+      {
+        id: 3,
+        nama: "Tempat Sampah C",
+        lat: -6.20030,
+        lng: 106.83060,
+        level: 15
+      }
+    ];
+
+    function loadCards() {
+      const container = document.getElementById("card-container");
+      container.innerHTML = "";
+      tempatSampahData.forEach(ts => {
+        let color = ts.level > 70 ? "danger" : ts.level > 30 ? "warning" : "success";
+        let badgeText = ts.level > 70 ? "Penuh" : ts.level > 30 ? "Menengah" : "Kosong";
+        let mapURL = `https://www.google.com/maps?q=${ts.lat},${ts.lng}&hl=id&z=18&output=embed`;
+
+        container.innerHTML += `
+          <div class="col-md-4 mb-4">
+            <div class="card p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">${ts.nama}</h5>
+                <span class="badge bg-${color} badge-status">${badgeText}</span>
+              </div>
+              <p class="mb-1"><strong>Level Kepenuhan:</strong> ${ts.level}%</p>
+              <div class="progress mb-3">
+                <div class="progress-bar bg-${color}" style="width: ${ts.level}%;">${ts.level}%</div>
+              </div>
+              <p class="mb-2"><strong>Lokasi:</strong><br>Lat: ${ts.lat.toFixed(5)}, Lng: ${ts.lng.toFixed(5)}</p>
+              <iframe class="map-embed" src="${mapURL}" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    window.onload = loadCards;
+  </script>
+
+</body>
+</html>
