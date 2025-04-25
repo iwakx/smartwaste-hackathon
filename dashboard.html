@@ -6,113 +6,303 @@
   <title>Dashboard Sampah Pintar</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      background-color: #eef2f7;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fc;
+      font-family: 'Poppins', sans-serif;
+      color: #495057;
     }
     .navbar {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      background: linear-gradient(90deg, #3e8ef7, #1c72d9);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     .navbar-brand {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff !important;
+      letter-spacing: 1px;
     }
-    .navbar-brand span {
-      font-weight: bold;
-      color: #fff;
-    }
-    .card {
-      border: none;
+    .special-card {
+      border: 1px solid #ddd;
       border-radius: 1rem;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-      transition: 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      background: linear-gradient(135deg, #ffffff, #f9fbff);
+      animation: fadeIn 0.8s ease-in-out;
+      transition: transform 0.3s ease;
     }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    .special-card:hover {
+      transform: translateY(-10px);
     }
     .map-embed {
       width: 100%;
-      height: 180px;
-      border: 0;
-      border-radius: 0.5rem;
+      height: 220px;
+      border: none;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     .badge-status {
+      font-size: 1rem;
+      padding: 0.6em 1em;
+      border-radius: 0.5rem;
+      font-weight: 600;
+    }
+    .progress {
+      background-color: #f0f4f7;
+      border-radius: 30px;
+      height: 12px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      border-radius: 30px;
       font-size: 0.8rem;
+      font-weight: 600;
+      line-height: 12px;
+      color: transparent;
+    }
+    .location-icon {
+      color: #6c757d;
+      margin-right: 6px;
+    }
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #333;
+    }
+    .icon-big {
+      font-size: 2.2rem;
+      color: #0072ff;
+      margin-right: 12px;
+    }
+    .action-btn {
+      margin-top: 1.5rem;
+      border-radius: 50px;
+    }
+    .statistik-container {
+      margin-bottom: 40px;
+    }
+    .card-footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+    }
+    .reset-btn {
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      background-color: #6c757d;
+      color: white;
+      border-radius: 50px;
+    }
+    .reset-btn:hover {
+      background-color: #5a6268;
+    }
+    .notification {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      display: none;
+    }
+    .btn-theme-switch {
+      border-radius: 50px;
+      background-color: #0072ff;
+      color: white;
+    }
+    .btn-theme-switch:hover {
+      background-color: #005bb5;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="#">
-        <i class="bi bi-recycle me-2"></i> Dashboard  <span>Sampah Pintar</span>
+        <i class="bi bi-recycle me-2"></i> Sampah Pintar
       </a>
+      <button class="btn btn-theme-switch ms-auto">Ganti Tema</button>
     </div>
   </nav>
 
-  <div class="container my-4">
-    <h4 class="mb-4">Status Tempat Sampah</h4>
-    <div class="row" id="card-container">
-      <!-- Kartu akan dimasukkan lewat JavaScript -->
+  <div class="notification" id="notification">
+    <i class="bi bi-bell-fill"></i> Tempat Sampah A telah penuh, segera dijemput!
+  </div>
+
+  <div class="container my-5">
+    <h4 class="mb-4 text-primary">Status Tempat Sampah</h4>
+    <div class="statistik-container">
+      <h5 class="text-primary">Statistik Kepenuhan</h5>
+      <canvas id="statistikChart"></canvas>
     </div>
+
+    <div class="d-flex justify-content-between mb-4">
+      <div>
+        <label for="filterLevel" class="form-label">Filter Level Kepenuhan</label>
+        <select class="form-select" id="filterLevel">
+          <option value="">Semua</option>
+          <option value="danger">Penuh</option>
+          <option value="warning">Menengah</option>
+          <option value="success">Kosong</option>
+        </select>
+      </div>
+      <div>
+        <label for="searchInput" class="form-label">Cari Tempat Sampah</label>
+        <input type="text" class="form-control" id="searchInput" placeholder="Cari berdasarkan nama...">
+      </div>
+      <div>
+        <label class="form-label d-block">&nbsp;</label>
+        <button class="btn reset-btn" id="resetFilter">Reset Filter</button>
+      </div>
+    </div>
+
+    <div class="row" id="card-container"></div>
   </div>
 
   <script>
     const tempatSampahData = [
-      {
-        id: 1,
-        nama: "Tempat Sampah A",
-        lat: -6.20123,
-        lng: 106.83245,
-        level: 85
-      },
-      {
-        id: 2,
-        nama: "Tempat Sampah B",
-        lat: -6.20250,
-        lng: 106.83512,
-        level: 40
-      },
-      {
-        id: 3,
-        nama: "Tempat Sampah C",
-        lat: -6.20030,
-        lng: 106.83060,
-        level: 15
-      }
+      { nama: "Tempat Sampah A", lat: -6.20123, lng: 106.83245, level: 85 },
+      { nama: "Tempat Sampah B", lat: -6.20250, lng: 106.83512, level: 45 },
+      { nama: "Tempat Sampah C", lat: -6.20030, lng: 106.83060, level: 15 },
+      { nama: "Tempat Sampah D", lat: -6.20345, lng: 106.83445, level: 92 },
+      { nama: "Tempat Sampah E", lat: -6.19910, lng: 106.83600, level: 65 },
     ];
+
+    function getStatus(level) {
+      if (level > 70) return { color: "danger", label: "Penuh" };
+      if (level > 30) return { color: "warning", label: "Menengah" };
+      return { color: "success", label: "Kosong" };
+    }
+
+    const barGradient = {
+      danger: "linear-gradient(to right, #ff416c, #ff4b2b)",
+      warning: "linear-gradient(to right, #f7971e, #ffd200)",
+      success: "linear-gradient(to right, #00b09b, #96c93d)"
+    };
 
     function loadCards() {
       const container = document.getElementById("card-container");
+      const filterLevel = document.getElementById("filterLevel").value;
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       container.innerHTML = "";
-      tempatSampahData.forEach(ts => {
-        let color = ts.level > 70 ? "danger" : ts.level > 30 ? "warning" : "success";
-        let badgeText = ts.level > 70 ? "Penuh" : ts.level > 30 ? "Menengah" : "Kosong";
-        let mapURL = `https://www.google.com/maps?q=${ts.lat},${ts.lng}&hl=id&z=18&output=embed`;
+
+      const filteredData = tempatSampahData.filter(ts => {
+        const status = getStatus(ts.level);
+        const matchesLevel = !filterLevel || status.color === filterLevel;
+        const matchesSearch = ts.nama.toLowerCase().includes(searchTerm);
+        return matchesLevel && matchesSearch;
+      });
+
+      if (filteredData.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Tempat sampah tidak ditemukan.</p></div>';
+      }
+
+      filteredData.forEach(ts => {
+        const status = getStatus(ts.level);
+        const mapURL = `https://www.google.com/maps?q=${ts.lat},${ts.lng}&hl=id&z=18&output=embed`;
 
         container.innerHTML += `
           <div class="col-md-4 mb-4">
-            <div class="card p-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">${ts.nama}</h5>
-                <span class="badge bg-${color} badge-status">${badgeText}</span>
+            <div class="special-card">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-trash-fill icon-big"></i>
+                  <h5 class="card-title mb-0">${ts.nama}</h5>
+                </div>
+                <span class="badge bg-${status.color} badge-status">${status.label}</span>
               </div>
-              <p class="mb-1"><strong>Level Kepenuhan:</strong> ${ts.level}%</p>
+              <p><strong>Level Kepenuhan:</strong> ${ts.level}%</p>
               <div class="progress mb-3">
-                <div class="progress-bar bg-${color}" style="width: ${ts.level}%;">${ts.level}%</div>
+                <div class="progress-bar" role="progressbar" style="width: ${ts.level}%; background-image: ${barGradient[status.color]};"></div>
               </div>
-              <p class="mb-2"><strong>Lokasi:</strong><br>Lat: ${ts.lat.toFixed(5)}, Lng: ${ts.lng.toFixed(5)}</p>
-              <iframe class="map-embed" src="${mapURL}" allowfullscreen loading="lazy"></iframe>
+              <p class="text-muted">
+                <i class="bi bi-geo-alt-fill location-icon"></i>
+                Lat: ${ts.lat.toFixed(5)}, Lng: ${ts.lng.toFixed(5)}
+              </p>
+              <iframe class="map-embed mb-3" src="${mapURL}" allowfullscreen loading="lazy"></iframe>
+              ${status.color === "danger" ? `
+                <button class="btn btn-danger w-100 action-btn">
+                  <i class="bi bi-truck"></i> Minta Penjemputan Sekarang
+                </button>` : ''}
             </div>
           </div>
         `;
       });
+
+      updateStatistikChart(); // Panggil update chart terpisah dari loadCards
     }
 
-    window.onload = loadCards;
-  </script>
+    function updateStatistikChart() {
+      const ctx = document.getElementById('statistikChart').getContext('2d');
 
+      // Data untuk grafik statistik tanpa filter
+      const labels = tempatSampahData.map(ts => ts.nama);
+      const dataLevels = tempatSampahData.map(ts => ts.level);
+
+      if (window.chartInstance) window.chartInstance.destroy();
+      window.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Level Kepenuhan (%)',
+            data: dataLevels,
+            backgroundColor: 'rgba(0,114,255,0.2)',
+            borderColor: '#0072ff',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 5,
+            pointHoverRadius: 7
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(tooltipItem) {
+                  return tooltipItem.raw + '% kepenuhan';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: { display: true, text: 'Persentase Kepenuhan' }
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById("filterLevel").addEventListener("change", loadCards);
+    document.getElementById("searchInput").addEventListener("input", loadCards);
+    document.getElementById("resetFilter").addEventListener("click", () => {
+      document.getElementById("filterLevel").value = "";
+      document.getElementById("searchInput").value = "";
+      loadCards();
+    });
+
+    document.querySelector(".btn-theme-switch").addEventListener("click", () => {
+      document.body.classList.toggle("bg-dark");
+      document.body.classList.toggle("text-light");
+    });
+
+    window.onload = () => {
+      loadCards();
+      updateStatistikChart(); // Pastikan grafik selalu up-to-date saat halaman dimuat
+    };
+  </script>
 </body>
 </html>
