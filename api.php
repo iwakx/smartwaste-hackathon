@@ -107,7 +107,7 @@ exit;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
-    echo json_encode(["status" => "error", "message" => "Metode tidak diizinkan"]);
+    echo json_encode(["status" => "error", "message" => "Method tidak diizinkan"]);
     exit;
 }
 
