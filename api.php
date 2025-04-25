@@ -1,21 +1,21 @@
 <?php
-// api.php
-
 // Konfigurasi database
 $host = "localhost";
 $user = "root";
 $pass = "";
 $dbname = "smartwaste";
 
+// Koneksi Database
 $conn = new mysqli($host, $user, $pass, $dbname);
 if ($conn->connect_error) {
     die(json_encode(["status" => "error", "message" => "DB connection failed"]));
 }
 
 
-
-
+//
 // ==== Handle GET request (untuk dashboard fetch data) ====
+//
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'read') {
     header('Content-Type: application/json');
     $result = $conn->query("SELECT * FROM smartwaste ORDER BY created_at DESC LIMIT 50");
@@ -29,7 +29,10 @@ exit;
 }
 
 
+//
 // ==== Handle POST request dari ESP32 ====
+//
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Ambil JSON dari ESP32
@@ -91,7 +94,10 @@ exit;
 }
 
 
+// 
 // ====== Jika Method yang digunakan bukan GET dan POST ======
+//
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode(["status" => "error", "message" => "Metode tidak diizinkan"]);
