@@ -5,7 +5,7 @@
 $host = "localhost";
 $user = "root";
 $pass = "";
-$dbname = "smartwaste_db";
+$dbname = "smartwaste";
 
 $conn = new mysqli($host, $user, $pass, $dbname);
 if ($conn->connect_error) {
