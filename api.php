@@ -37,8 +37,8 @@ $stmt->execute();
 
 // Kirim notifikasi jika penuh
 if ($is_full) {
-    $bot_token = "YOUR_BOT_TOKEN"; // Ganti token
-    $chat_id = "YOUR_CHAT_ID";     // Ganti chat ID
+    $bot_token = "7699495817:AAHK6IdyQNnOhQH03XPnoSiA-_3bw-JIeg4";
+    $chat_id = "93372553";
     $message = "🚨 Tempat sampah penuh!\nBerat: {$weight} kg\nJarak: {$distance} cm\nLokasi: https://maps.google.com/?q={$latitude},{$longitude}";
     file_get_contents("https://api.telegram.org/bot{$bot_token}/sendMessage?chat_id={$chat_id}&text=" . urlencode($message));
 }
