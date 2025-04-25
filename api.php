@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $longitude = (float) $data['longitude'];
     $is_full = filter_var($data['is_full'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
-    // Cek apakah parsing boolean gagal
+    // Validasi boolean
     if (!is_bool($is_full)) {
         echo json_encode(["status" => "error", "message" => "is_full harus boolean"]);
         exit;
