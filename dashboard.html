@@ -198,47 +198,72 @@
   </div>
 
   <script>
-    const tempatSampahData = [
-      { nama: "Tempat Sampah A", lat: -6.20123, lng: 106.83245, level: 85, jarak: 2.5, berat: 30 },
-      { nama: "Tempat Sampah B", lat: -6.20250, lng: 106.83512, level: 45, jarak: 1.8, berat: 25 },
-      { nama: "Tempat Sampah C", lat: -6.20030, lng: 106.83060, level: 15, jarak: 3.0, berat: 20 },
-      { nama: "Tempat Sampah D", lat: -6.20345, lng: 106.83445, level: 92, jarak: 1.5, berat: 35 },
-      { nama: "Tempat Sampah E", lat: -6.19910, lng: 106.83600, level: 65, jarak: 2.0, berat: 28 },
-    ];
-
+    let tempatSampahData = [];
+  
     function getStatus(level) {
       if (level > 70) return { color: "danger", label: "Penuh" };
       if (level > 30) return { color: "warning", label: "Menengah" };
       return { color: "success", label: "Kosong" };
     }
-
+  
     const barGradient = {
       danger: "linear-gradient(to right, #ff416c, #ff4b2b)",
       warning: "linear-gradient(to right, #f7971e, #ffd200)",
       success: "linear-gradient(to right, #00b09b, #96c93d)"
     };
-
+  
+    function fetchTempatSampah() {
+      fetch("api.php")
+        .then(res => res.json())
+        .then(data => {
+          // Kalau data hanya 1 objek, bungkus ke dalam array
+          if (!Array.isArray(data)) data = [data];
+  
+          const maxDistance = 40; // Jarak maksimum dianggap kosong (dalam cm)
+  
+          tempatSampahData = data.map((item, index) => {
+            const distance = parseFloat(item.distance);
+            const level = Math.min(100, Math.max(0, ((maxDistance - distance) / maxDistance) * 100));
+  
+            return {
+              nama: `Tempat Sampah ${String.fromCharCode(65 + index)}`,
+              lat: parseFloat(item.latitude),
+              lng: parseFloat(item.longitude),
+              level: Math.round(level),
+              jarak: parseFloat(item.distance),
+              berat: parseFloat(item.weight)
+            };
+          });
+  
+          loadCards();
+          updateStatistikChart();
+        })
+        .catch(err => {
+          console.error("Gagal fetch data dari API:", err);
+        });
+    }
+  
     function loadCards() {
       const container = document.getElementById("card-container");
       const filterLevel = document.getElementById("filterLevel").value;
       const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       container.innerHTML = "";
-
+  
       const filteredData = tempatSampahData.filter(ts => {
         const status = getStatus(ts.level);
         const matchesLevel = !filterLevel || status.color === filterLevel;
         const matchesSearch = ts.nama.toLowerCase().includes(searchTerm);
         return matchesLevel && matchesSearch;
       });
-
+  
       if (filteredData.length === 0) {
         container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Tempat sampah tidak ditemukan.</p></div>';
       }
-
+  
       filteredData.forEach(ts => {
         const status = getStatus(ts.level);
         const mapURL = `https://www.google.com/maps?q=${ts.lat},${ts.lng}&hl=id&z=18&output=embed`;
-
+  
         container.innerHTML += `
           <div class="col-md-4 mb-4">
             <div class="special-card">
@@ -265,20 +290,18 @@
           </div>
         `;
       });
-
-      updateStatistikChart();
     }
-
+  
     function showDetail(jarak, berat) {
       document.getElementById("modalJarak").textContent = jarak;
       document.getElementById("modalBerat").textContent = berat;
     }
-
+  
     function updateStatistikChart() {
       const ctx = document.getElementById('statistikChart').getContext('2d');
       const labels = tempatSampahData.map(ts => ts.nama);
       const dataLevels = tempatSampahData.map(ts => ts.level);
-
+  
       if (window.chartInstance) window.chartInstance.destroy();
       window.chartInstance = new Chart(ctx, {
         type: 'line',
@@ -318,7 +341,7 @@
         }
       });
     }
-
+  
     document.getElementById("filterLevel").addEventListener("change", loadCards);
     document.getElementById("searchInput").addEventListener("input", loadCards);
     document.getElementById("resetFilter").addEventListener("click", () => {
@@ -326,16 +349,16 @@
       document.getElementById("searchInput").value = "";
       loadCards();
     });
-
+  
     document.querySelector(".btn-theme-switch").addEventListener("click", () => {
       document.body.classList.toggle("bg-dark");
       document.body.classList.toggle("text-light");
     });
-
+  
     window.onload = () => {
-      loadCards();
-      updateStatistikChart();
+      fetchTempatSampah();
     };
   </script>
+  
 </body>
 </html>
