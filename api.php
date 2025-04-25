@@ -79,8 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("ddddi", $weight, $distance, $latitude, $longitude, $is_full ? 1 : 0);
     $stmt->execute();
 
-    // Kirim notifikasi jika penuh
-    if ($is_full) {
+    // Kalkulasi status is_full berdasarkan jarak dan berat
+    if ($weight > 10000 && $distance > 10) {
+        $is_full = true;
+    } else {
+        $is_full = false;
+    }
+
+    // Kirim notifikasi jika status is_full = true
+    if ($is_full = true) {
         $bot_token = "7699495817:AAHK6IdyQNnOhQH03XPnoSiA-_3bw-JIeg4";  // Token Bot
         $chat_id = "93372553";  // Chat ID Telegram
         $message = "🚨 Tempat sampah penuh!\nBerat: {$weight} kg\nJarak: {$distance} cm\nLokasi: https://maps.google.com/?q={$latitude},{$longitude}";
@@ -103,3 +110,5 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET
     echo json_encode(["status" => "error", "message" => "Metode tidak diizinkan"]);
     exit;
 }
+
+?>
