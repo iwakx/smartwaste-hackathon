@@ -6,7 +6,7 @@
   <title>Dashboard Sampah Pintar</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -116,6 +116,10 @@
     .btn-theme-switch:hover {
       background-color: #005bb5;
     }
+    .modal-content {
+      background-color: #fff;
+      border-radius: 1rem;
+    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
@@ -131,10 +135,6 @@
       <button class="btn btn-theme-switch ms-auto">Ganti Tema</button>
     </div>
   </nav>
-
-  <div class="notification" id="notification">
-    <i class="bi bi-bell-fill"></i> Tempat Sampah A telah penuh, segera dijemput!
-  </div>
 
   <div class="container my-5">
     <h4 class="mb-4 text-primary">Status Tempat Sampah</h4>
@@ -166,13 +166,29 @@
     <div class="row" id="card-container"></div>
   </div>
 
+  <!-- Modal Detail Sampah -->
+  <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="modalDetailLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalDetailLabel">Detail Tempat Sampah</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Jarak Sensor Ultrasonic:</strong> <span id="modalJarak"></span> CM</p>
+          <p><strong>Berat Sampah:</strong> <span id="modalBerat"></span> Gram</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const tempatSampahData = [
-      { nama: "Tempat Sampah A", lat: -6.20123, lng: 106.83245, level: 85 },
-      { nama: "Tempat Sampah B", lat: -6.20250, lng: 106.83512, level: 45 },
-      { nama: "Tempat Sampah C", lat: -6.20030, lng: 106.83060, level: 15 },
-      { nama: "Tempat Sampah D", lat: -6.20345, lng: 106.83445, level: 92 },
-      { nama: "Tempat Sampah E", lat: -6.19910, lng: 106.83600, level: 65 },
+      { nama: "Tempat Sampah A", lat: -6.20123, lng: 106.83245, level: 85, jarak: 2.5, berat: 30 },
+      { nama: "Tempat Sampah B", lat: -6.20250, lng: 106.83512, level: 45, jarak: 1.8, berat: 25 },
+      { nama: "Tempat Sampah C", lat: -6.20030, lng: 106.83060, level: 15, jarak: 3.0, berat: 20 },
+      { nama: "Tempat Sampah D", lat: -6.20345, lng: 106.83445, level: 92, jarak: 1.5, berat: 35 },
+      { nama: "Tempat Sampah E", lat: -6.19910, lng: 106.83600, level: 65, jarak: 2.0, berat: 28 },
     ];
 
     function getStatus(level) {
@@ -227,22 +243,24 @@
                 Lat: ${ts.lat.toFixed(5)}, Lng: ${ts.lng.toFixed(5)}
               </p>
               <iframe class="map-embed mb-3" src="${mapURL}" allowfullscreen loading="lazy"></iframe>
-              ${status.color === "danger" ? `
-                <button class="btn btn-danger w-100 action-btn">
-                  <i class="bi bi-truck"></i> Minta Penjemputan Sekarang
-                </button>` : ''}
+              <button class="btn btn-primary w-100 action-btn" data-bs-toggle="modal" data-bs-target="#modalDetail" onclick="showDetail(${ts.jarak}, ${ts.berat})">
+                <i class="bi bi-info-circle"></i> Detail
+              </button>
             </div>
           </div>
         `;
       });
 
-      updateStatistikChart(); // Panggil update chart terpisah dari loadCards
+      updateStatistikChart();
+    }
+
+    function showDetail(jarak, berat) {
+      document.getElementById("modalJarak").textContent = jarak;
+      document.getElementById("modalBerat").textContent = berat;
     }
 
     function updateStatistikChart() {
       const ctx = document.getElementById('statistikChart').getContext('2d');
-
-      // Data untuk grafik statistik tanpa filter
       const labels = tempatSampahData.map(ts => ts.nama);
       const dataLevels = tempatSampahData.map(ts => ts.level);
 
@@ -301,7 +319,7 @@
 
     window.onload = () => {
       loadCards();
-      updateStatistikChart(); // Pastikan grafik selalu up-to-date saat halaman dimuat
+      updateStatistikChart();
     };
   </script>
 </body>
