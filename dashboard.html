@@ -246,25 +246,16 @@
     }
   
     function sendTelegramNotification() {
-  const message = `
+        const message = `
 🚨 Tempat sampah tampaknya sudah penuh dalam 15 detik terakhir! Segera diperiksa.
 
- const keyboard = {
-    inline_keyboard: [
-      [
-        {
-          text: "Lihat Dashboard Tempat Sampah", // Teks yang muncul di button
-          url: "http://192.168.122.117/SmartWaste/smartwaste-hackathon/dashboard.html" // URL ketika button diklik
-        }
-      ]
-    ]
-  };
+🔗 Dashboard: [Lihat Dashboard Tempat Sampah](http://192.168.122.117/SmartWaste/smartwaste-hackathon/dashboard.html)
 
 📦 Kategori Sampah:
 - Sampah Ringan: 0-4kg
 - Sampah Biasa: 4-10kg
 - Sampah Berat: >10kg
-`;
+  `;
 
   const TELEGRAM_TOKEN = '7699495817:AAHK6IdyQNnOhQH03XPnoSiA-_3bw-JIeg4';
   const CHAT_ID = '7549872273';
