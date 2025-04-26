@@ -16,16 +16,7 @@ if ($conn->connect_error) {
     die(json_encode(["status" => "error", "message" => "Database connection failed"]));
 }
 
-// // Handle GET request
-// if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'read') {
-//     $result = $conn->query("SELECT * FROM waste_data ORDER BY created_at DESC LIMIT 50");
-//     $data = [];
-//     while ($row = $result->fetch_assoc()) {
-//         $data[] = $row;
-//     }
-//     echo json_encode($data);
-//     exit;
-// }
+
 
 // Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     file_put_contents('debug.log', date('Y-m-d H:i:s')." - ".$json.PHP_EOL, FILE_APPEND);
 
     // Validate required fields
-    $required = ['weight', 'distance', 'latitude', 'longitude', 'is_full'];
+    $required = ['weight', 'distance', 'latitude', 'longitude'];
     foreach ($required as $field) {
         if (!isset($data[$field])) {
             http_response_code(400);
@@ -51,18 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $distance = (float)$data['distance'];
     $latitude = (float)$data['latitude'];
     $longitude = (float)$data['longitude'];
-    $is_full = filter_var($data['is_full'], FILTER_VALIDATE_BOOLEAN);
-    $is_full_value = $is_full ? 1 : 0;
+
 
     // Prepare and execute SQL statement
-    $stmt = $conn->prepare("INSERT INTO waste_data (weight, distance, latitude, longitude, is_full) VALUES (?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO waste_data (weight, distance, latitude, longitude) VALUES (?, ?, ?, ?)");
     if (!$stmt) {
         http_response_code(500);
         echo json_encode(["status" => "error", "message" => "Prepare failed: ".$conn->error]);
         exit;
     }
 
-    $stmt->bind_param("ddddi", $weight, $distance, $latitude, $longitude, $is_full_value);
+    $stmt->bind_param("dddd", $weight, $distance, $latitude, $longitude);
     
     if (!$stmt->execute()) {
         http_response_code(500);
@@ -71,12 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Send notification if bin is full
-    if ($is_full) {
-        $bot_token = "7699495817:AAHK6IdyQNnOhQH03XPnoSiA-_3bw-JIeg4";
-        $chat_id = "93372553";
-        $message = "🚨 Tempat sampah penuh!\nBerat: ".round($weight,2)." kg\nJarak: ".round($distance,2)." cm\nLokasi: https://maps.google.com/?q=$latitude,$longitude";
-        file_get_contents("https://api.telegram.org/bot$bot_token/sendMessage?chat_id=$chat_id&text=".urlencode($message));
-    }
+    // if ($is_full) {
+    //     $bot_token = "7699495817:AAHK6IdyQNnOhQH03XPnoSiA-_3bw-JIeg4";
+    //     $chat_id = "93372553";
+    //     $message = "🚨 Tempat sampah penuh!\nBerat: ".round($weight,2)." kg\nJarak: ".round($distance,2)." cm\nLokasi: https://maps.google.com/?q=$latitude,$longitude";
+    //     file_get_contents("https://api.telegram.org/bot$bot_token/sendMessage?chat_id=$chat_id&text=".urlencode($message));
+    // }
 
     // Return success response
     echo json_encode([
@@ -87,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             "distance" => $distance,
             "latitude" => $latitude,
             "longitude" => $longitude,
-            "is_full" => $is_full
         ]
     ]);
     exit;

@@ -49,6 +49,7 @@
       border-radius: 0.5rem;
       font-weight: 600;
     }
+    
     .progress {
       background-color: #f0f4f7;
       border-radius: 30px;
@@ -147,7 +148,6 @@
       <a class="navbar-brand d-flex align-items-center" href="#">
         <i class="bi bi-recycle me-2"></i> Sampah Pintar
       </a>
-      <button class="btn btn-theme-switch ms-auto">Ganti Tema</button>
     </div>
   </nav>
 
@@ -191,135 +191,306 @@
         </div>
         <div class="modal-body">
           <p><strong>Jarak Sensor Ultrasonic:</strong> <span id="modalJarak"></span> CM</p>
-          <p><strong>Berat Sampah:</strong> <span id="modalBerat"></span> Gram</p>
+          <p><strong>Berat Sampah:</strong> <span id="modalBerat"></span> KG</p>
+          <p><strong>Status:</strong> <span id="modalStatus"></span></p>
+          <p><strong>Terakhir Update:</strong> <span id="modalUpdate"></span></p>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    const tempatSampahData = [
-      { nama: "Tempat Sampah A", lat: -6.20123, lng: 106.83245, level: 85, jarak: 2.5, berat: 30 },
-      { nama: "Tempat Sampah B", lat: -6.20250, lng: 106.83512, level: 45, jarak: 1.8, berat: 25 },
-      { nama: "Tempat Sampah C", lat: -6.20030, lng: 106.83060, level: 15, jarak: 3.0, berat: 20 },
-      { nama: "Tempat Sampah D", lat: -6.20345, lng: 106.83445, level: 92, jarak: 1.5, berat: 35 },
-      { nama: "Tempat Sampah E", lat: -6.19910, lng: 106.83600, level: 65, jarak: 2.0, berat: 28 },
-    ];
+    let tempatSampahData = [];
+    let chartInstance = null;
+    let distanceBuffer = [];
+  
+    function getStatus(item) {
+   const level = item.level;
+   console.log(`Level untuk ${item.nama}: ${level}%`);
 
-    function getStatus(level) {
-      if (level > 70) return { color: "danger", label: "Penuh" };
-      if (level > 30) return { color: "warning", label: "Menengah" };
-      return { color: "success", label: "Kosong" };
+   if (level >= 80) return { color: "danger", label: "Penuh" };
+   if (level >= 50) return { color: "warning", label: "Menengah" };
+   return { color: "success", label: "Kosong" };
+}
+
+  
+    function calculateFillLevel(distance, weight) {
+      const EMPTY_DISTANCE = 31;
+      const FULL_DISTANCE = 5;
+      const MAX_WEIGHT = 10;
+      const MIN_WEIGHT = 0.2;
+  
+      const clampedDist = Math.min(Math.max(distance, FULL_DISTANCE), EMPTY_DISTANCE);
+      const distanceLevel = ((EMPTY_DISTANCE - clampedDist) / (EMPTY_DISTANCE - FULL_DISTANCE)) * 100;
+  
+      const clampedWeight = Math.min(Math.max(weight, MIN_WEIGHT), MAX_WEIGHT);
+      const weightLevel = ((clampedWeight - MIN_WEIGHT) / (MAX_WEIGHT - MIN_WEIGHT)) * 100;
+  
+      const finalLevel = (distanceLevel * 0.85) + (weightLevel * 0.15);
+  
+      return Math.round(finalLevel);
+    }
+  
+    function checkForSuddenFill(distance) {
+      const now = Date.now();
+      distanceBuffer.push({ time: now, distance: distance });
+  
+      distanceBuffer = distanceBuffer.filter(entry => now - entry.time <= 15000);
+  
+      const lowDistanceCount = distanceBuffer.filter(entry => entry.distance < 8).length;
+  
+      if (lowDistanceCount >= 3) {
+        sendTelegramNotification();
+        distanceBuffer = [];
+      }
+    }
+  
+    function sendTelegramNotification() {
+  const message = `
+🚨 Tempat sampah tampaknya sudah penuh dalam 15 detik terakhir! Segera diperiksa.
+
+ const keyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: "Lihat Dashboard Tempat Sampah", // Teks yang muncul di button
+          url: "http://192.168.122.117/SmartWaste/smartwaste-hackathon/dashboard.html" // URL ketika button diklik
+        }
+      ]
+    ]
+  };
+
+📦 Kategori Sampah:
+- Sampah Ringan: 0-4kg
+- Sampah Biasa: 4-10kg
+- Sampah Berat: >10kg
+`;
+
+  const TELEGRAM_TOKEN = '7699495817:AAHK6IdyQNnOhQH03XPnoSiA-_3bw-JIeg4';
+  const CHAT_ID = '7549872273';
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+
+  fetch(url, {
+    method: "POST", 
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: message,
+    })
+  }).then(res => {
+    if (res.ok) {
+      console.log("✅ Notifikasi Telegram terkirim!");
+    } else {
+      console.error("❌ Gagal kirim notifikasi Telegram.");
+    }
+  }).catch(error => {
+    console.error("❌ Error saat kirim fetch:", error);
+  });
+}
+
+
+  
+    async function fetchTempatSampah() {
+      try {
+        const response = await fetch("api.php?action=read");
+        const data = await response.json();
+        const dataArray = Array.isArray(data) ? data : [data];
+  
+        tempatSampahData = dataArray.map((item, index) => {
+          const level = Math.round(calculateFillLevel(item.distance, item.weight));
+          return {
+            id: item.id,
+            nama: `Tempat Sampah ${index + 1}`,
+            lat: parseFloat(item.latitude),
+            lng: parseFloat(item.longitude),
+            level: level,
+            jarak: parseFloat(item.distance),
+            berat: parseFloat(item.weight),
+            waktu: item.created_at
+          };
+        });
+  
+        loadCards();
+        updateStatistikChart();
+      } catch (error) {
+        console.error("Gagal fetch data:", error);
+      }
     }
 
+    
+  
+    function loadCards() {
+  const container = document.getElementById("card-container");
+  const filterLevel = document.getElementById("filterLevel").value;
+  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+  container.innerHTML = ""; // Kosongkan kontainer
+
+  // Data tempat sampah dummy
+  const dummyData = [
+    {
+      "nama": "Tempat Sampah 2",
+      "level": 50,
+      "lat": -6.22839,
+      "lng": 106.8466,
+      "status": "menengah",
+      "jarak": 3,
+      "berat": 8.2,
+      "waktu": "2025-04-26T14:15:00Z"
+    },
+    {
+      "nama": "Tempat Sampah 3",
+      "level": 0,
+      "lat": -6.22939,
+      "lng": 106.8476,
+      "status": "kosong",
+      "jarak": 1,
+      "berat": 0,
+      "waktu": "2025-04-26T16:00:00Z"
+    }
+  ];
+
+  // Gabungkan data asli dari API dengan data dummy
+  const allData = [...tempatSampahData, ...dummyData];
+  // Filter tempat sampah
+  const filteredData = tempatSampahData.filter(ts => {
+    const status = getStatus(ts);
+    const matchesLevel = !filterLevel || status.color === filterLevel;
+    const matchesSearch = ts.nama.toLowerCase().includes(searchTerm);
+    return matchesLevel && matchesSearch;
+  });
+
+  // Cek jika ada hasil setelah difilter
+  if (filteredData.length === 0) {
+    container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Tempat sampah tidak ditemukan.</p></div>';
+    return;
+  }
+
+  // Ambil hanya satu tempat sampah yang sesuai, misalnya tempat sampah pertama yang sesuai
+  const singleItem = [filteredData[0]]; 
+
+  // Tampilkan hanya satu tempat sampah
+  singleItem.forEach(ts => {
+    const status = getStatus(ts);
+    const mapURL = `https://www.google.com/maps?q=${ts.lat},${ts.lng}&hl=id&z=18&output=embed`;
+
+    // Cek status dan tampilkan detail tempat sampah
+    container.innerHTML += `
+      <div class="col-md-4 mb-4">
+        <div class="special-card">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-trash-fill icon-big"></i>
+              <h5 class="card-title mb-0">${ts.nama}</h5>
+            </div>
+            <span class="badge bg-${status.color} badge-status">${status.label}</span>
+          </div>
+          <p><strong>Level Kepenuhan:</strong> ${ts.level}%</p>
+          <div class="progress mb-3">
+            <div class="progress-bar" role="progressbar" style="width: ${ts.level}%; background-image: ${barGradient[status.color]};"></div>
+          </div>
+          <p class="text-muted">
+            <i class="bi bi-geo-alt-fill location-icon"></i>
+            Lat: ${ts.lat.toFixed(5)}, Lng: ${ts.lng.toFixed(5)}
+          </p>
+          <iframe class="map-embed mb-3" src="${mapURL}" allowfullscreen loading="lazy"></iframe>
+          <button class="btn btn-primary w-100 action-btn" data-bs-toggle="modal" data-bs-target="#modalDetail" 
+            onclick="showDetail(${ts.jarak}, ${ts.berat}, '${status.label}', '${ts.waktu}')">
+            <i class="bi bi-info-circle"></i> Detail
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  // Update statistik chart hanya dengan data tempat sampah yang ditampilkan
+  updateStatistikChart(singleItem);
+}
+
+  
     const barGradient = {
       danger: "linear-gradient(to right, #ff416c, #ff4b2b)",
       warning: "linear-gradient(to right, #f7971e, #ffd200)",
       success: "linear-gradient(to right, #00b09b, #96c93d)"
     };
-
-    function loadCards() {
-      const container = document.getElementById("card-container");
-      const filterLevel = document.getElementById("filterLevel").value;
-      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
-      container.innerHTML = "";
-
-      const filteredData = tempatSampahData.filter(ts => {
-        const status = getStatus(ts.level);
-        const matchesLevel = !filterLevel || status.color === filterLevel;
-        const matchesSearch = ts.nama.toLowerCase().includes(searchTerm);
-        return matchesLevel && matchesSearch;
-      });
-
-      if (filteredData.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Tempat sampah tidak ditemukan.</p></div>';
-      }
-
-      filteredData.forEach(ts => {
-        const status = getStatus(ts.level);
-        const mapURL = `https://www.google.com/maps?q=${ts.lat},${ts.lng}&hl=id&z=18&output=embed`;
-
-        container.innerHTML += `
-          <div class="col-md-4 mb-4">
-            <div class="special-card">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="d-flex align-items-center">
-                  <i class="bi bi-trash-fill icon-big"></i>
-                  <h5 class="card-title mb-0">${ts.nama}</h5>
-                </div>
-                <span class="badge bg-${status.color} badge-status">${status.label}</span>
-              </div>
-              <p><strong>Level Kepenuhan:</strong> ${ts.level}%</p>
-              <div class="progress mb-3">
-                <div class="progress-bar" role="progressbar" style="width: ${ts.level}%; background-image: ${barGradient[status.color]};"></div>
-              </div>
-              <p class="text-muted">
-                <i class="bi bi-geo-alt-fill location-icon"></i>
-                Lat: ${ts.lat.toFixed(5)}, Lng: ${ts.lng.toFixed(5)}
-              </p>
-              <iframe class="map-embed mb-3" src="${mapURL}" allowfullscreen loading="lazy"></iframe>
-              <button class="btn btn-primary w-100 action-btn" data-bs-toggle="modal" data-bs-target="#modalDetail" onclick="showDetail(${ts.jarak}, ${ts.berat})">
-                <i class="bi bi-info-circle"></i> Detail
-              </button>
-            </div>
-          </div>
-        `;
-      });
-
-      updateStatistikChart();
+  
+    function showDetail(jarak, berat, status, waktu) {
+      document.getElementById("modalJarak").textContent = jarak.toFixed(2);
+      document.getElementById("modalBerat").textContent = berat.toFixed(2);
+      document.getElementById("modalStatus").textContent = status;
+      document.getElementById("modalUpdate").textContent = new Date(waktu).toLocaleString();
     }
+  
+    function updateStatistikChart(filteredData = tempatSampahData) {
+  const ctx = document.getElementById('statistikChart')?.getContext('2d');
+  if (!ctx) {
+    console.error("❌ Canvas 'statistikChart' tidak ditemukan!");
+    return;
+  }
 
-    function showDetail(jarak, berat) {
-      document.getElementById("modalJarak").textContent = jarak;
-      document.getElementById("modalBerat").textContent = berat;
-    }
+  // Ambil hanya 1 data pertama
+  const data = filteredData.length > 0 ? [filteredData[0]] : [];
 
-    function updateStatistikChart() {
-      const ctx = document.getElementById('statistikChart').getContext('2d');
-      const labels = tempatSampahData.map(ts => ts.nama);
-      const dataLevels = tempatSampahData.map(ts => ts.level);
+  const labels = data.map(ts => ts.nama);
+  const dataLevels = data.map(ts => ts.level);
 
-      if (window.chartInstance) window.chartInstance.destroy();
-      window.chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Level Kepenuhan (%)',
-            data: dataLevels,
-            backgroundColor: 'rgba(0,114,255,0.2)',
-            borderColor: '#0072ff',
-            borderWidth: 2,
-            tension: 0.4,
-            fill: true,
-            pointRadius: 5,
-            pointHoverRadius: 7
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: 'top' },
-            tooltip: {
-              callbacks: {
-                label: function(tooltipItem) {
-                  return tooltipItem.raw + '% kepenuhan';
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: { display: true, text: 'Persentase Kepenuhan' }
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Level Kepenuhan (%)',
+        data: dataLevels,
+        backgroundColor: dataLevels.map(level => {
+          if (level > 70) return '#ff416c';
+          if (level > 50) return '#f7971e';
+          return '#00b09b';
+        }),
+        borderColor: '#fff',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return context.parsed.y + '%';
             }
           }
         }
-      });
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          title: {
+            display: true,
+            text: 'Persentase Kepenuhan',
+            font: { weight: 'bold' }
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Tempat Sampah',
+            font: { weight: 'bold' }
+          }
+        }
+      }
     }
+  });
+}
 
-    document.getElementById("filterLevel").addEventListener("change", loadCards);
+  
+    // Event listeners
+       // Event listeners
+       document.getElementById("filterLevel").addEventListener("change", loadCards);
     document.getElementById("searchInput").addEventListener("input", loadCards);
     document.getElementById("resetFilter").addEventListener("click", () => {
       document.getElementById("filterLevel").value = "";
@@ -327,15 +498,19 @@
       loadCards();
     });
 
-    document.querySelector(".btn-theme-switch").addEventListener("click", () => {
-      document.body.classList.toggle("bg-dark");
-      document.body.classList.toggle("text-light");
-    });
+    setInterval(fetchTempatSampah, 20000);
+    window.onload = fetchTempatSampah;
 
-    window.onload = () => {
-      loadCards();
-      updateStatistikChart();
-    };
+    // 🔥 Tambahan baru untuk notifikasi otomatis
+    function monitorSuddenFillLoop() {
+      if (tempatSampahData.length > 0) {
+        const distance = tempatSampahData[0].jarak;
+        checkForSuddenFill(distance);
+      }
+    }
+    setInterval(monitorSuddenFillLoop, 5000);
+
   </script>
+  
 </body>
 </html>
