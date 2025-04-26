@@ -1,4 +1,6 @@
-SmartWaste is a smart trash bin monitoring system that measures the fill level, weight, and location of trash bins. It helps sanitation workers by sending automatic notifications when bins are full, and provides a clean, interactive dashboard to monitor bins in real-time.
+SmartWaste is a smart trash bin monitoring system that measures the fill level, weight, 
+and location of trash bins. It helps sanitation workers by sending automatic notifications
+when bins are full, and provides a clean, interactive dashboard to monitor bins in real-time.
 
 ✨ Features
 
@@ -23,6 +25,7 @@ Red: Full
 🧪 Dummy data included for testing and presentation purposes
 
 🛠️ Technologies Used
+
 Frontend: HTML, CSS (Bootstrap), JavaScript
 
 Backend: PHP (api.php)
@@ -32,3 +35,5 @@ Charts: Chart.js
 Icons: Bootstrap Icons
 
 Maps: Google Maps Embed API
+
+Alerts : Telegram BotFather
